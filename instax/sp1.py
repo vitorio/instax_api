@@ -194,6 +194,7 @@ class SP1:
         self.connect()
         printerVersion = self.getPrinterVersion()
         printerModel = self.getPrinterModelName()
+        resp = self.sendShadingCommand()
         #printerSpecifications = self.getPrinterSpecifications()
         printCount = self.getPrintCount()
         printerInformation = {
@@ -214,7 +215,6 @@ class SP1:
         # Send Pre Print Commands
         self.connect()
         progress(10, progressTotal, status='Connected! - Sending Pre Print Commands.')
-        resp = self.sendShadingCommand()
         for x in range(1, 9):
             resp = self.sendPrePrintCommand(x)
         self.close()
@@ -237,7 +237,7 @@ class SP1:
         self.connect()
         progress(40, progressTotal, status='About to send Image.                       ')
         resp = self.sendPrepImageCommand(16, 0, 180000)
-        for segment in range(32):
+        for segment in range(2):
             start = segment * 60000
             end = start + 60000
             segmentBytes = imageBytes[start:end]
