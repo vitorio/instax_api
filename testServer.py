@@ -56,7 +56,7 @@ parser.add_argument("-t", "--total", type=int, default=20,
                     help="The total number of prints in the printers lifetime"
                     ", default 20")
 parser.add_argument("-V", "--version", type=int, default=2,
-                    help="The Instax SP-* version, 2 or 3, default is 2")
+                    help="The Instax SP-* version, 1 or 2 or 3, default is 2")
 args = parser.parse_args()
 
 logLevel = logging.INFO

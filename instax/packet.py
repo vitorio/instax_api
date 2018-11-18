@@ -25,6 +25,7 @@ class PacketFactory(object):
     MESSAGE_TYPE_MODEL_NAME = 194
     MESSAGE_TYPE_195 = 195
     MESSAGE_TYPE_PRE_PRINT = 196
+    MESSAGE_TYPE_SHADING = 64
 
     MESSAGE_MODE_COMMAND = 36  # Command from Client
     MESSAGE_MODE_RESPONSE = 42  # Response from Server
@@ -71,6 +72,8 @@ class PacketFactory(object):
             return(Type195Command(mode=self.mode, byteArray=byteArray))
         elif pType == self.MESSAGE_TYPE_SET_LOCK_STATE:
             return(LockStateCommand(mode=self.mode, byteArray=byteArray))
+        elif pType == self.MESSAGE_TYPE_SHADING:
+            return(ShadingCommand(mode=self.mode, byteArray=byteArray))
         else:
             logging.debug("Unknown Packet Type: " + str(pType))
             logging.debug("Packet Bytes: [" + self.printRawByteArray(byteArray) + "]")
@@ -92,6 +95,7 @@ class Packet(object):
     MESSAGE_TYPE_MODEL_NAME = 194
     MESSAGE_TYPE_195 = 195
     MESSAGE_TYPE_PRE_PRINT = 196
+    MESSAGE_TYPE_SHADING = 64
 
     MESSAGE_MODE_COMMAND = 36  # Command from Client
     MESSAGE_MODE_RESPONSE = 42  # Response from Server
@@ -1077,6 +1081,53 @@ class LockStateCommand(Packet):
         if(byteArray is not None):
             self.byteArray = byteArray
             self.header = super(LockStateCommand, self).decodeHeader(mode,
+                                                                     byteArray)
+            self.valid = self.validatePacket(byteArray,
+                                             self.header['packetLength'])
+            if(mode == self.MESSAGE_MODE_COMMAND):
+                self.decodedCommandPayload = self.decodeComPayload(byteArray)
+            elif(mode == self.MESSAGE_MODE_RESPONSE):
+                self.decodedCommandPayload = self.decodeRespPayload(byteArray)
+        else:
+            self.mode = mode
+            self.unknownFourByteInt = unknownFourByteInt
+
+    def encodeComPayload(self):
+        """Encode Command Payload."""
+        return bytearray()
+
+    def decodeComPayload(self, byteArray):
+        """Decode the Command Payload."""
+        return {}
+
+    def encodeRespPayload(self):
+        """Encode Response Payload."""
+        payload = bytearray(0)
+        payload = payload + self.encodeFourByteInt(self.unknownFourByteInt)
+        return payload
+
+    def decodeRespPayload(self, byteArray):
+        """Decode Response Payload."""
+        self.unknownFourByteInt = self.getFourByteInt(16, byteArray)
+        self.payload = {
+            'unknownFourByteInt': self.unknownFourByteInt
+        }
+        return self.payload
+
+class ShadingCommand(Packet):
+    """Shading Command."""
+
+    NAME = "Shading Data"
+    TYPE = Packet.MESSAGE_TYPE_SHADING
+
+    def __init__(self, mode, byteArray=None, unknownFourByteInt=None):
+        """Initialise Shading Data Command Packet."""
+        super(ShadingCommand, self).__init__(mode)
+        self.payload = {}
+        self.mode = mode
+        if(byteArray is not None):
+            self.byteArray = byteArray
+            self.header = super(ShadingCommand, self).decodeHeader(mode,
                                                                      byteArray)
             self.valid = self.validatePacket(byteArray,
                                              self.header['packetLength'])

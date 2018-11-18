@@ -84,6 +84,8 @@ if __name__ == "__main__":
 
     if args.version is 1:
         logging.info("Attempting to print to an Instax SP-1 printer.")
+        myInstax = instax.SP1(ip=args.host, port=args.port, pinCode=args.pin,
+                      timeout=args.timeout)
         # TODO - Need to find an SP-2 to test with.
     elif args.version is 2:
         logging.info("Attempting to print to an Instax SP-2 printer.")

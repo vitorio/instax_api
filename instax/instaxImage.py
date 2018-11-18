@@ -7,7 +7,7 @@ class InstaxImage:
     """Image Utilities class."""
 
     dimensions = {
-        1 : (600, 800),
+        1 : (480, 640),
         2 : (600, 800),
         3 : (800, 800)
     }
@@ -58,7 +58,7 @@ class InstaxImage:
         return encodedBytes
 
     def decodeImage(self, imageBytes):
-        """Decode the byte array into an image."""
+        """Decode the type=2 or type=3 byte array into an image."""
         targetImg = []
         # Packing the individual colours back together.
         for h in range(self.printHeight):
@@ -98,7 +98,7 @@ class InstaxImage:
                 img = crop_rectangle(rotatedImage, maxSize, crop_type)
 
         # Stip away any exif data.
-        newImage = Image.new(img.mode, img.size)
+        newImage = Image.new('RGBA', img.size)
         newImage.putdata(img.getdata())
         self.myImage = pure_pil_alpha_to_color_v2(newImage, (255,255,255))
 

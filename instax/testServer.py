@@ -7,7 +7,7 @@ import socket
 from .packet import Packet, PacketFactory, SpecificationsCommand, \
     VersionCommand, PrintCountCommand, ModelNameCommand, PrePrintCommand, \
     PrinterLockCommand, ResetCommand, PrepImageCommand, SendImageCommand, \
-    Type83Command, Type195Command, LockStateCommand
+    Type83Command, Type195Command, LockStateCommand, ShadingCommand
 from .instaxImage import InstaxImage
 import signal
 import sys
@@ -32,7 +32,7 @@ class TestServer:
         self.backlog = 5
         self.returnCode = Packet.RTN_E_RCV_FRAME
         self.ejecting = 0
-        if version in [2,3]:
+        if version in [1,2,3]:
             self.version = version
         else:
             self.logger.warning("Invalid Instax SP version, defaulting to SP-2")
@@ -103,11 +103,16 @@ class TestServer:
         for seg_key in range(len(segments)):
             combined += segments[seg_key]
         self.logger.info("Combined image is %s bytes long" % len(combined))
-        instaxImage = InstaxImage(type=self.version)
-        instaxImage.decodeImage(combined)
         timestr = time.strftime("%Y%m%d-%H%M%S")
-        filename = timestr + ".bmp"
-        instaxImage.saveImage(filename)
+        if self.version == 2 or self.version == 3:
+            filename = timestr + ".bmp"
+            instaxImage = InstaxImage(type=self.version)
+            instaxImage.decodeImage(combined)
+            instaxImage.saveImage(filename)
+        else:
+            filename = timestr + ".jpg"
+            with open(filename, 'wb') as f:
+                f.write(combined)
         self.logger.info("Saved image to: %s" % filename)
 
     def printByteArray(self, byteArray):
@@ -154,6 +159,8 @@ class TestServer:
             response = self.processType195Command(decodedPacket)
         elif(decodedPacket.TYPE == Packet.MESSAGE_TYPE_SET_LOCK_STATE):
             response = self.processSetLockStateCommand(decodedPacket)
+        elif(decodedPacket.TYPE == Packet.MESSAGE_TYPE_SHADING):
+            response = self.processShadingCommand(decodedPacket)
         else:
             self.logger.info('Unknown Command. Failing!: ' + str(decodedPacket.TYPE))
 
@@ -325,6 +332,19 @@ class TestServer:
     def processSetLockStateCommand(self, decodedPacket):
         """Process a Lock State Command."""
         unknownFourByteInt = 100
+        sessionTime = decodedPacket.header['sessionTime']
+        resPacket = LockStateCommand(Packet.MESSAGE_MODE_RESPONSE,
+                                     unknownFourByteInt=unknownFourByteInt)
+        encodedResponse = resPacket.encodeResponse(sessionTime,
+                                                   self.returnCode,
+                                                   self.ejecting,
+                                                   self.battery,
+                                                   self.printCount)
+        return encodedResponse
+
+    def processShadingCommand(self, decodedPacket):
+        """Process a Shading Data Command."""
+        unknownFourByteInt = 0
         sessionTime = decodedPacket.header['sessionTime']
         resPacket = LockStateCommand(Packet.MESSAGE_MODE_RESPONSE,
                                      unknownFourByteInt=unknownFourByteInt)
