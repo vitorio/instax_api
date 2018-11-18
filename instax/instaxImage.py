@@ -1,6 +1,8 @@
 """Image transformation utilities."""
 from PIL import Image, ImageOps
 import logging
+import io
+import math
 
 
 class InstaxImage:
@@ -40,21 +42,57 @@ class InstaxImage:
         logging.info("New Image Size: W: %s, H: %s" % (self.myImage.size))
         imagePixels = self.myImage.getdata()
         logging.info("Mode: %s" % (self.myImage.mode))
-        arrayLen = len(imagePixels) * 3
-        logging.info("Encoded Array Length: %s" % arrayLen)
-        encodedBytes = [None] * arrayLen
-        for h in range(self.printHeight):
-            for w in range(self.printWidth):
-                r, g, b= imagePixels[(h * self.printWidth) + w]
-                redTarget = (((w * self.printHeight) * 3) +
-                             (self.printHeight * 0)) + h
-                greenTarget = (((w * self.printHeight) * 3) +
-                               (self.printHeight * 1)) + h
-                blueTarget = (((w * self.printHeight) * 3) +
-                              (self.printHeight * 2)) + h
-                encodedBytes[redTarget] = int(r)
-                encodedBytes[greenTarget] = int(g)
-                encodedBytes[blueTarget] = int(b)
+
+        if self.type == 2 or self.type == 3:
+            arrayLen = len(imagePixels) * 3
+            logging.info("Encoded Array Length: %s" % arrayLen)
+            encodedBytes = [None] * arrayLen
+            for h in range(self.printHeight):
+                for w in range(self.printWidth):
+                    r, g, b= imagePixels[(h * self.printWidth) + w]
+                    redTarget = (((w * self.printHeight) * 3) +
+                                 (self.printHeight * 0)) + h
+                    greenTarget = (((w * self.printHeight) * 3) +
+                                   (self.printHeight * 1)) + h
+                    blueTarget = (((w * self.printHeight) * 3) +
+                                  (self.printHeight * 2)) + h
+                    encodedBytes[redTarget] = int(r)
+                    encodedBytes[greenTarget] = int(g)
+                    encodedBytes[blueTarget] = int(b)
+        else:
+            target = 180000
+            # via Mark Setchell, https://stackoverflow.com/a/52281257
+            """Save the image as JPEG with the given name at best quality that makes less than "target" bytes"""
+            # Min and Max quality
+            Qmin, Qmax = 25, 100
+            # Highest acceptable quality found
+            Qacc = -1
+            while Qmin <= Qmax:
+                m = math.floor((Qmin + Qmax) / 2)
+
+                # Encode into memory and get size
+                buffer = io.BytesIO()
+                self.myImage.save(buffer, format="JPEG", quality=m)
+                s = buffer.getbuffer().nbytes
+                
+                if s <= target:
+                    Qacc = m
+                    Qmin = m + 1
+                elif s > target:
+                    Qmax = m - 1
+
+            # Write to disk at the defined quality
+            if Qacc > -1:
+                buffer = io.BytesIO()
+                self.myImage.save(buffer, format="JPEG", quality=Qacc)
+                arrayLen = buffer.getbuffer().nbytes
+                logging.info("Encoded JPEG Length: %s" % arrayLen)
+                encodedBytes = [None] * arrayLen
+                for idx, x in enumerate(buffer.getbuffer()):
+                    encodedBytes[idx] = int(x)
+            else:
+                raise Exception("ERROR: No acceptble quality factor found")
+            
         return encodedBytes
 
     def decodeImage(self, imageBytes):

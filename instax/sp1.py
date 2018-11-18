@@ -99,11 +99,11 @@ class SP1:
         response = self.sendCommand(cmdPacket)
         return response
 
-    def getPrinterSpecifications(self):
-        """Get the printer specifications."""
-        cmdPacket = SpecificationsCommand(Packet.MESSAGE_MODE_COMMAND)
-        response = self.sendCommand(cmdPacket)
-        return response
+#    def getPrinterSpecifications(self):
+#        """Get the printer specifications."""
+#        cmdPacket = SpecificationsCommand(Packet.MESSAGE_MODE_COMMAND)
+#        response = self.sendCommand(cmdPacket)
+#        return response
 
     def sendPrePrintCommand(self, cmdNumber):
         """Send a PrePrint Command."""
@@ -194,14 +194,14 @@ class SP1:
         self.connect()
         printerVersion = self.getPrinterVersion()
         printerModel = self.getPrinterModelName()
-        printerSpecifications = self.getPrinterSpecifications()
+        #printerSpecifications = self.getPrinterSpecifications()
         printCount = self.getPrintCount()
         printerInformation = {
             'version': printerVersion.payload,
             'model': printerModel.payload['modelName'],
             'battery': printerVersion.header['battery'],
             'printCount': printerVersion.header['printCount'],
-            'specs': printerSpecifications.payload,
+            #'specs': printerSpecifications.payload,
             'count': printCount.payload['printHistory']
         }
         self.close()
@@ -214,6 +214,7 @@ class SP1:
         # Send Pre Print Commands
         self.connect()
         progress(10, progressTotal, status='Connected! - Sending Pre Print Commands.')
+        resp = self.sendShadingCommand()
         for x in range(1, 9):
             resp = self.sendPrePrintCommand(x)
         self.close()
@@ -235,7 +236,7 @@ class SP1:
         time.sleep(1)
         self.connect()
         progress(40, progressTotal, status='About to send Image.                       ')
-        resp = self.sendPrepImageCommand(16, 0, 1920000)
+        resp = self.sendPrepImageCommand(16, 0, 180000)
         for segment in range(32):
             start = segment * 60000
             end = start + 60000

@@ -346,7 +346,7 @@ class TestServer:
         """Process a Shading Data Command."""
         unknownFourByteInt = 0
         sessionTime = decodedPacket.header['sessionTime']
-        resPacket = LockStateCommand(Packet.MESSAGE_MODE_RESPONSE,
+        resPacket = ShadingCommand(Packet.MESSAGE_MODE_RESPONSE,
                                      unknownFourByteInt=unknownFourByteInt)
         encodedResponse = resPacket.encodeResponse(sessionTime,
                                                    self.returnCode,

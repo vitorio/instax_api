@@ -1120,7 +1120,7 @@ class ShadingCommand(Packet):
     NAME = "Shading Data"
     TYPE = Packet.MESSAGE_TYPE_SHADING
 
-    def __init__(self, mode, byteArray=None, unknownFourByteInt=None):
+    def __init__(self, mode, byteArray=None, unknownFourByteInt=0):
         """Initialise Shading Data Command Packet."""
         super(ShadingCommand, self).__init__(mode)
         self.payload = {}
@@ -1141,11 +1141,17 @@ class ShadingCommand(Packet):
 
     def encodeComPayload(self):
         """Encode Command Payload."""
-        return bytearray()
+        payload = bytearray(0)
+        payload = payload + self.encodeFourByteInt(self.unknownFourByteInt)
+        return payload
 
     def decodeComPayload(self, byteArray):
-        """Decode the Command Payload."""
-        return {}
+        """Decode Response Payload."""
+        self.unknownFourByteInt = self.getFourByteInt(16, byteArray)
+        self.payload = {
+            'unknownFourByteInt': self.unknownFourByteInt
+        }
+        return self.payload
 
     def encodeRespPayload(self):
         """Encode Response Payload."""
