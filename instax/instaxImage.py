@@ -9,7 +9,7 @@ class InstaxImage:
     """Image Utilities class."""
 
     dimensions = {
-        1 : (480, 640),
+        1 : (640, 480),
         2 : (600, 800),
         3 : (800, 800)
     }
@@ -40,10 +40,10 @@ class InstaxImage:
             logging.info("Rotating Square Image")
             self.myImage = self.myImage.rotate(-90, expand=True)
         logging.info("New Image Size: W: %s, H: %s" % (self.myImage.size))
-        imagePixels = self.myImage.getdata()
         logging.info("Mode: %s" % (self.myImage.mode))
 
         if self.type == 2 or self.type == 3:
+            imagePixels = self.myImage.getdata()
             arrayLen = len(imagePixels) * 3
             logging.info("Encoded Array Length: %s" % arrayLen)
             encodedBytes = [None] * arrayLen
@@ -60,7 +60,8 @@ class InstaxImage:
                     encodedBytes[greenTarget] = int(g)
                     encodedBytes[blueTarget] = int(b)
         else:
-            target = 180000
+            # https://github.com/samckittrick/libInstaxClient suggests the max JPEG image size is 153,600
+            target = 153600
             # via Mark Setchell, https://stackoverflow.com/a/52281257
             """Save the image as JPEG with the given name at best quality that makes less than "target" bytes"""
             # Min and Max quality
@@ -85,11 +86,8 @@ class InstaxImage:
             if Qacc > -1:
                 buffer = io.BytesIO()
                 self.myImage.save(buffer, format="JPEG", quality=Qacc)
-                arrayLen = buffer.getbuffer().nbytes
-                logging.info("Encoded JPEG Length: %s" % arrayLen)
-                encodedBytes = [None] * arrayLen
-                for idx, x in enumerate(buffer.getbuffer()):
-                    encodedBytes[idx] = int(x)
+                logging.info("Encoded JPEG Length: %s" % buffer.getbuffer().nbytes)
+                encodedBytes = buffer.getvalue()
             else:
                 raise Exception("ERROR: No acceptble quality factor found")
             
@@ -132,8 +130,12 @@ class InstaxImage:
         else:
             if image_ratio == 1.0:
                 img = crop_square(rotatedImage, maxSize, backgroundColour)
-            else:
+            elif image_ratio > 1.0:
+                # landscape
                 img = crop_rectangle(rotatedImage, maxSize, crop_type)
+            elif image_ratio < 1.0:
+                # portrait
+                img = crop_rectangle(rotatedImage, (self.printWidth, self.printHeight), crop_type)
 
         # Stip away any exif data.
         newImage = Image.new('RGBA', img.size)

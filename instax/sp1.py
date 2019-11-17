@@ -10,6 +10,7 @@ from .packet import PacketFactory, Packet, SpecificationsCommand,  \
     PrinterLockCommand, ResetCommand, PrepImageCommand, SendImageCommand, \
     Type83Command, Type195Command, LockStateCommand, ShadingCommand
 import logging
+import math
 
 
 class SP1:
@@ -194,7 +195,7 @@ class SP1:
         self.connect()
         printerVersion = self.getPrinterVersion()
         printerModel = self.getPrinterModelName()
-        resp = self.sendShadingCommand()
+        #resp = self.sendShadingCommand()
         #printerSpecifications = self.getPrinterSpecifications()
         printCount = self.getPrintCount()
         printerInformation = {
@@ -236,13 +237,16 @@ class SP1:
         time.sleep(1)
         self.connect()
         progress(40, progressTotal, status='About to send Image.                       ')
-        resp = self.sendPrepImageCommand(16, 0, 180000)
-        for segment in range(2):
-            start = segment * 60000
-            end = start + 60000
+        resp = self.sendPrepImageCommand(2, 0, len(imageBytes))
+        segments = math.ceil(len(imageBytes) / 960)
+        for segment in range(segments):
+            start = segment * 960
+            end = start + 960
             segmentBytes = imageBytes[start:end]
+            if len(segmentBytes) < 960:
+                segmentBytes = segmentBytes + bytearray(960 - len(segmentBytes))
             resp = self.sendSendImageCommand(segment, bytes(segmentBytes))
-            progress(40 + segment, progressTotal, status=('Sent image segment %s.         ' % segment))
+            progress(40 + 29 * segment / segments, progressTotal, status=('Sent image segment %s.         ' % segment))
         resp = self.sendT83Command()
         resp.printDebug()
         self.close()
