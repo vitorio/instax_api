@@ -279,7 +279,7 @@ def crop_rectangle(source, size, crop_type='top'):
         if crop_type == 'top':
             box = (0, 0, img.size[0], size[1])
         elif crop_type == 'middle':
-            box = (int(round((img.size[0] + size[0]) / 2)), 0,
+            box = (int(round((img.size[0] - size[0]) / 2)), 0,
                    int(round((img.size[0] + size[0]) / 2)), img.size[1])
         elif crop_type == 'bottom':
             box = (img.size[0] - size[0], 0, img.size[0], img.size[1])
